@@ -85,9 +85,9 @@ publish_presence(offline, ClientId, Merchant) ->
 
 % publish message payload to a topic
 publish_message(Topic, Payload) ->
-    io:format("Publishing message ~s on topic ~s~n", [Payload, Topic]),
     case emqx_json:safe_encode(Payload) of
         {ok, Encoded} ->
+            io:format("Publishing message ~s on topic ~s~n", [Encoded, Topic]),
             emqx_broker:safe_publish(
               make_msg(1, Topic, Encoded));
         {error, _Reason} ->
@@ -98,9 +98,8 @@ topic(ClientId) ->
     emqx_topic:systop(iolist_to_binary(["devices/", ClientId, "/status"])).
 
 make_msg(QoS, Topic, Payload) ->
-    emqx_message:set_flag(
-      sys, emqx_message:make(
-             ?MODULE, QoS, Topic, iolist_to_binary(Payload))).
+    emqx_message:make(
+        ?MODULE, QoS, Topic, iolist_to_binary(Payload)).
 
 connected_presence(ClientId, Merchants, Status) ->
     #{clientId => ClientId,
