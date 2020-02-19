@@ -88,9 +88,9 @@ publish_presence(offline, ClientId, Merchant) ->
 % publish message payload to a topic
 publish_message(Topic, Payload) ->
     case emqx_json:safe_encode(Payload) of
-        {ok, Payload} ->
+        {ok, Encoded} ->
             emqx_broker:safe_publish(
-              make_msg(1, Topic, Payload));
+              make_msg(1, Topic, Encoded));
         {error, _Reason} ->
             ok
     end.
