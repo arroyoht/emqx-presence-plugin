@@ -95,7 +95,7 @@ publish_message(Topic, Payload) ->
     end.
 
 topic(ClientId) ->
-    emqx_topic:systop(iolist_to_binary(["devices/", ClientId, "/status"])).
+    iolist_to_binary(["devices/", ClientId, "/status"]).
 
 make_msg(QoS, Topic, Payload) ->
     emqx_message:make(
