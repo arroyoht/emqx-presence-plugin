@@ -27,19 +27,15 @@ load(Env) ->
 
 on_session_subscribed(#{clientid := ClientId}, Topic, _SubOpts, _Env) ->
     Parsed = match_and_parse(Topic),
-    publish_presence(online, ClientId, Parsed),
-    io:format("Device ~s is online on topic ~s", [ClientId, Topic]).
+    publish_presence(online, ClientId, Parsed).
 
 on_session_unsubscribed(#{clientid := ClientId}, Topic, _Opts, _Env) ->
     Parsed = match_and_parse(Topic),
-    publish_presence(offline, ClientId, Parsed),
-    io:format("Device ~s is offline on topic ~s", [ClientId, Topic]).
+    publish_presence(offline, ClientId, Parsed).
 
 on_session_terminated(_ClientInfo = #{clientid := ClientId}, _Reason, SessInfo, _Env) ->
     Topics = maps:keys(maps:get(subscriptions, SessInfo)),
-    publish_presences(Topics, ClientId),
-    io:format("Device ~s is offline on topics ~s",
-              [ClientId, lists:join(", ", Topics)]).
+    publish_presences(Topics, ClientId).
 
 %%--------------------------------------------------------------------
 %% Message PubSub Hooks
@@ -79,14 +75,17 @@ publish_presences([H|T], ClientId) ->
 % Publish presence event depending on status
 publish_presence(_, _, ignore) -> ok;
 publish_presence(online, ClientId, Merchant) ->
+    io:format("Device ~s is online with merchant ~s~n", [ClientId, Merchant]),
     Presence = connected_presence(ClientId, [Merchant], "ONLINE"),
     publish_message(topic(ClientId), Presence);
 publish_presence(offline, ClientId, Merchant) ->
+    io:format("Device ~s is offline with merchant ~s~n", [ClientId, Merchant]),
     Presence = connected_presence(ClientId, [Merchant], "OFFLINE"),
     publish_message(topic(ClientId), Presence).
 
 % publish message payload to a topic
 publish_message(Topic, Payload) ->
+    io:format("Publishing message ~s on topic ~s~n", [Payload, Topic]),
     case emqx_json:safe_encode(Payload) of
         {ok, Encoded} ->
             emqx_broker:safe_publish(
