@@ -36,7 +36,7 @@ on_session_unsubscribed(#{clientid := ClientId}, Topic, _Opts, _Env) ->
     io:format("Device ~s is offline on topic ~s", [ClientId, Topic]).
 
 on_session_terminated(_ClientInfo = #{clientid := ClientId}, _Reason, SessInfo, _Env) ->
-    Topics = maps:keys(maps:get(SessInfo, subscriptions)),
+    Topics = maps:keys(maps:get(subscriptions, SessInfo)),
     publish_presences(Topics, ClientId),
     io:format("Device ~s is offline on topics ~s",
               [ClientId, lists:join(", ", Topics)]).
