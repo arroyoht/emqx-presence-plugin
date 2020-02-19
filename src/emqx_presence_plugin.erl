@@ -76,11 +76,11 @@ publish_presences([H|T], ClientId) ->
 publish_presence(_, _, ignore) -> ok;
 publish_presence(online, ClientId, Merchant) ->
     io:format("Device ~s is online with merchant ~s~n", [ClientId, Merchant]),
-    Presence = connected_presence(ClientId, [Merchant], "ONLINE"),
+    Presence = connected_presence(ClientId, [Merchant], <<"ONLINE">>),
     publish_message(topic(ClientId), Presence);
 publish_presence(offline, ClientId, Merchant) ->
     io:format("Device ~s is offline with merchant ~s~n", [ClientId, Merchant]),
-    Presence = connected_presence(ClientId, [Merchant], "OFFLINE"),
+    Presence = connected_presence(ClientId, [Merchant], <<"OFFLINE">>),
     publish_message(topic(ClientId), Presence).
 
 % publish message payload to a topic
@@ -104,4 +104,4 @@ make_msg(QoS, Topic, Payload) ->
 connected_presence(ClientId, Merchants, Status) ->
     #{clientId => ClientId,
       merchants => Merchants,
-      status => iolist_to_binary(Status)}.
+      status => Status}.
