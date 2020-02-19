@@ -12,16 +12,14 @@
         , on_session_terminated/4 ]).
 
 %% Message Pubsub Hooks
--export([ on_message_acked/3
-        , on_message_delivered/3 ]).
+-export([ on_message_delivered/3 ]).
 
 %% Called when the plugin application start
 load(Env) ->
     emqx:hook('session.subscribed',  {?MODULE, on_session_subscribed, [Env]}),
     emqx:hook('session.unsubscribed',{?MODULE, on_session_unsubscribed, [Env]}),
     emqx:hook('session.terminated',  {?MODULE, on_session_terminated, [Env]}),
-    emqx:hook('message.delivered',    {?MODULE, on_message_delivered, [Env]}),
-    emqx:hook('message.acked',       {?MODULE, on_message_acked, [Env]}).
+    emqx:hook('message.delivered',    {?MODULE, on_message_delivered, [Env]}).
 
 %%--------------------------------------------------------------------
 %% Session Lifecycle Hooks
@@ -35,7 +33,7 @@ on_session_unsubscribed(#{clientid := ClientId}, Topic, _Opts, _Env) ->
     Parsed = match_and_parse(Topic),
     publish_presence(offline, ClientId, Parsed).
 
-on_session_terminated(_ClientInfo = #{clientid := ClientId}, _Reason, SessInfo, _Env) ->
+on_session_terminated(#{clientid := ClientId}, _Reason, SessInfo, _Env) ->
     Topics = maps:keys(maps:get(subscriptions, SessInfo)),
     publish_presences(Topics, ClientId).
 
@@ -43,21 +41,16 @@ on_session_terminated(_ClientInfo = #{clientid := ClientId}, _Reason, SessInfo, 
 %% Message PubSub Hooks
 %%--------------------------------------------------------------------
 
-on_message_delivered(_ClientInfo = #{clientid := ClientId}, Message, _Env) ->
-    io:format("Message delivered to client(~s): ~s~n",
-              [ClientId, emqx_message:format(Message)]).
-            
-on_message_acked(_ClientInfo = #{clientid := ClientId}, Message, _Env) ->
-    io:format("Message acked by client(~s): ~s~n",
-              [ClientId, emqx_message:format(Message)]).
+on_message_delivered(#{clientid := ClientId}, #{topic := Topic}, _Env) ->
+    io:format("Message delivered to client ~s on topic ~s~n",
+              [ClientId, Topic]).
 
 %% Called when the plugin application stop
 unload() ->
     emqx:unhook('session.subscribed',  {?MODULE, on_session_subscribed}),
     emqx:unhook('session.unsubscribed',{?MODULE, on_session_unsubscribed}),
     emqx:unhook('session.terminated',  {?MODULE, on_session_terminated}),
-    emqx:unhook('message.delivered',   {?MODULE, on_message_delivered}),
-    emqx:unhook('message.acked',       {?MODULE, on_message_acked}).
+    emqx:unhook('message.delivered',   {?MODULE, on_message_delivered}).
 
 %%--------------------------------------------------------------------
 %% Helper functions
