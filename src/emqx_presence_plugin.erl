@@ -12,13 +12,15 @@
         , on_session_terminated/4 ]).
 
 %% Message Pubsub Hooks
--export([ on_message_acked/3 ]).
+-export([ on_message_acked/3
+        , on_message_delivered/3 ]).
 
 %% Called when the plugin application start
 load(Env) ->
     emqx:hook('session.subscribed',  {?MODULE, on_session_subscribed, [Env]}),
     emqx:hook('session.unsubscribed',{?MODULE, on_session_unsubscribed, [Env]}),
     emqx:hook('session.terminated',  {?MODULE, on_session_terminated, [Env]}),
+    emqx:hook('message.delivered',    {?MODULE, on_message_delivered, [Env]}),
     emqx:hook('message.acked',       {?MODULE, on_message_acked, [Env]}).
 
 %%--------------------------------------------------------------------
@@ -41,8 +43,10 @@ on_session_terminated(_ClientInfo = #{clientid := ClientId}, _Reason, SessInfo, 
 %% Message PubSub Hooks
 %%--------------------------------------------------------------------
 
-%% Transform message and return
-
+on_message_delivered(_ClientInfo = #{clientid := ClientId}, Message, _Env) ->
+    io:format("Message delivered to client(~s): ~s~n",
+              [ClientId, emqx_message:format(Message)]).
+            
 on_message_acked(_ClientInfo = #{clientid := ClientId}, Message, _Env) ->
     io:format("Message acked by client(~s): ~s~n",
               [ClientId, emqx_message:format(Message)]).
@@ -52,6 +56,7 @@ unload() ->
     emqx:unhook('session.subscribed',  {?MODULE, on_session_subscribed}),
     emqx:unhook('session.unsubscribed',{?MODULE, on_session_unsubscribed}),
     emqx:unhook('session.terminated',  {?MODULE, on_session_terminated}),
+    emqx:unhook('message.delivered',   {?MODULE, on_message_delivered}),
     emqx:unhook('message.acked',       {?MODULE, on_message_acked}).
 
 %%--------------------------------------------------------------------
@@ -76,11 +81,11 @@ publish_presences([H|T], ClientId) ->
 publish_presence(_, _, ignore) -> ok;
 publish_presence(online, ClientId, Merchant) ->
     io:format("Device ~s is online with merchant ~s~n", [ClientId, Merchant]),
-    Presence = connected_presence(ClientId, [Merchant], <<"ONLINE">>),
+    Presence = connected_presence([Merchant], <<"ONLINE">>),
     publish_message(topic(ClientId), Presence);
 publish_presence(offline, ClientId, Merchant) ->
     io:format("Device ~s is offline with merchant ~s~n", [ClientId, Merchant]),
-    Presence = connected_presence(ClientId, [Merchant], <<"OFFLINE">>),
+    Presence = connected_presence([Merchant], <<"OFFLINE">>),
     publish_message(topic(ClientId), Presence).
 
 % publish message payload to a topic
@@ -94,14 +99,16 @@ publish_message(Topic, Payload) ->
             ok
     end.
 
+% compose device status topic
 topic(ClientId) ->
     iolist_to_binary(["devices/", ClientId, "/status"]).
 
+% compose emqx message object
 make_msg(QoS, Topic, Payload) ->
     emqx_message:make(
         ?MODULE, QoS, Topic, iolist_to_binary(Payload)).
 
-connected_presence(ClientId, Merchants, Status) ->
-    #{clientId => ClientId,
-      merchants => Merchants,
+% compose status payload
+connected_presence(Merchants, Status) ->
+      #{merchants => Merchants,
       status => Status}.
