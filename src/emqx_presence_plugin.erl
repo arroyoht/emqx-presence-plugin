@@ -104,4 +104,4 @@ make_msg(QoS, Topic, Payload) ->
 connected_presence(ClientId, Merchants, Status) ->
     #{clientId => ClientId,
       merchants => Merchants,
-      status => Status}.
+      status => iolist_to_binary(Status)}.
